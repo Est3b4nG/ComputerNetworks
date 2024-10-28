@@ -6,7 +6,7 @@ from threading import Thread
 
 #Server would be running on the same host as Client
 if len(sys.argv) != 2:
-    print("\n===== Error usage, python3 TCPClient3.py SERVER_IP SERVER_PORT ======\n")
+    print("\n===== Error usage, python3 client.py SERVER_IP SERVER_PORT ======\n")
     exit(0)
 serverHost = "127.0.0.1"
 serverPort = int(sys.argv[1])
@@ -53,7 +53,6 @@ def start_file_upload():
     uploadingSocket.bind(('', 0))  # Bind to any available port
     upload_port = uploadingSocket.getsockname()[1]  # Get the port number assigned
     uploadingSocket.listen(5)
-#    print(f"File upload server started on port {upload_port}")
 
     # Inform the main server of the new upload port 
     TCP_port_info = f"{username} upload port will be {upload_port}"
@@ -132,7 +131,7 @@ if authenticated:
     
     while True:
 
-        command = input("\nIntroduce the command:   ").lower()
+        command = input("\nIntroduce the command:   ")
         print(f"[send] {command}")
 
         if command == "xit":
@@ -156,3 +155,8 @@ if authenticated:
                 peer_port = int(peer_port)
                 download_thread = threading.Thread(target=download_file, args=(peer_ip, peer_port, command.split(" ")[1]))
                 download_thread.start()
+
+
+
+
+
