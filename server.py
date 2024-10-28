@@ -93,7 +93,8 @@ class ClientThread(Thread):
 
                         if "upload port" in message:
                             TCP_port_dictionaries[message.split(" ")[0]] = message.split(" ")[5]
-                            print(TCP_port_dictionaries)  
+                            print(f"{message.split(" ")[0]} upload port {message.split(" ")[5]} added to the TCP port list")
+                            #print(TCP_port_dictionaries)  
                             continue    
 
                         elif message.startswith("pub"):
