@@ -12,16 +12,16 @@ serverHost = "127.0.0.1"
 serverPort = int(sys.argv[1])
 serverAddress = (serverHost, serverPort)
 
-clients= []
-client_last_active = {}
-activeClients = []
-clientUsernamesDict = {}
-
 # Define socket for the server side and bind address
 serverSocket = socket(AF_INET, SOCK_DGRAM)
 serverSocket.bind(serverAddress)
 
+clients= []
+client_last_active = {}
+activeClients = []
+clientUsernamesDict = {}
 published_files = {}
+TCP_port_dictionaries = {}
 
 
 class ClientThread(Thread):
@@ -91,7 +91,12 @@ class ClientThread(Thread):
 
                         print(f"[recv] {message} from {clientUsernamesDict[self.clientAddress]}")
 
-                        if message.startswith("pub"):
+                        if "upload port" in message:
+                            TCP_port_dictionaries[message.split(" ")[0]] = message.split(" ")[5]
+                            print(TCP_port_dictionaries)  
+                            continue    
+
+                        elif message.startswith("pub"):
                             response = self.pubFile(message)
 
                         elif message.startswith("get"):
@@ -172,7 +177,9 @@ class ClientThread(Thread):
             for client_address, client_user in clientUsernamesDict.items():
                 if client_user == published_files[filename]:
                     peer_address = client_address
-            response = f"PEER {peer_address[0]} {peer_address[1]}"
+                    selected_user = client_user
+                    break
+            response = f"PEER {peer_address[0]} {TCP_port_dictionaries[selected_user]}"
         else:
             response = "No active peers with that file"
         return response
