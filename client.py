@@ -55,12 +55,13 @@ def start_file_upload():
     uploadingSocket.listen(5)
 #    print(f"File upload server started on port {upload_port}")
 
-    # Inform the main server of the new upload port (optional)
-    #clientSocket.sendto(f"publish_port {upload_port}".encode(), serverAddress)
+    # Inform the main server of the new upload port 
+    clientSocket.sendto(f"{username} upload port will be {upload_port}".encode(), serverAddress)
+
     while True:
         # Accept incoming download requests
-        peerSockt, clientAddress = uploadingSocket.accept()
-        print(f"Connected to downloading peer {clientAddress}")
+        peerSockt, peerAddress = uploadingSocket.accept()
+        print(f"Connected to downloading peer {peerAddress}")
 
         # Start a new thread to handle the file upload
         Thread(target=send_file_data, args=(peerSockt,)).start()
@@ -84,48 +85,50 @@ def send_file_data(peerSockt):
     finally:
         peerSockt.close()
 
-while True:
+
     
-    if not authenticated:
-        print("Username and password are required for further actions")
-        username = input("Enter your username: ")
-        password = input("Enter your password: ")
-        if username == "":
-            username = "<Empty>"
-        if password == "":
-            password = "<Empty>"
-        # Send the authentication request (formatted message)
-        message = f' login {username} {password}'
-        print(f"[send] login {username} {password}")
-        clientSocket.sendto(message.encode(), serverAddress)
+while not authenticated:
+    print("Username and password are required for further actions")
+    username = input("Enter your username: ")
+    password = input("Enter your password: ")
+    if username == "":
+        username = "<Empty>"
+    if password == "":
+        password = "<Empty>"
+    # Send the authentication request (formatted message)
+    message = f' login {username} {password}'
+    print(f"[send] login {username} {password}")
+    clientSocket.sendto(message.encode(), serverAddress)
 
-        # receive response from the server
-        # 1024 is a suggested packet size
-        data , server = clientSocket.recvfrom(1024)
-        receivedMessage = data.decode()
+    # receive response from the server
+    # 1024 is a suggested packet size
+    data , server = clientSocket.recvfrom(1024)
+    receivedMessage = data.decode()
 
-        # Check if the server sends a new port
-        if receivedMessage.startswith("NEWPORT"):
-            receivedMessage = receivedMessage.split(" ")
-            new_port = int(receivedMessage[1])
-            print(f"[recv] Switching to new port {new_port} for further communication.")
-            serverAddress = (serverHost, new_port)
-            # Combine the rest of the message after the port
-            receivedMessage = " ".join(receivedMessage[2:])  # Start from the 2nd index to skip the port
+    # Check if the server sends a new port
+    if receivedMessage.startswith("NEWPORT"):
+        receivedMessage = receivedMessage.split(" ")
+        new_port = int(receivedMessage[1])
+        print(f"[recv] Switching to new port {new_port} for further communication.")
+        serverAddress = (serverHost, new_port)
+        # Combine the rest of the message after the port
+        receivedMessage = " ".join(receivedMessage[2:])  # Start from the 2nd index to skip the port
 
-        print(f"[recv] {receivedMessage}")
-        if receivedMessage == "Authentication successful, you're active, welcome to BitTrickle":
-            authenticated = True
+    print(f"[recv] {receivedMessage}")
+    if receivedMessage == "Authentication successful, you're active, welcome to BitTrickle":
+        authenticated = True
  
-    if authenticated:
-        # Start the heartbeat thread after successful authentication
-        heartbeat_running = True
-        heartbeat_thread = threading.Thread(target=send_heartbeat)
-        heartbeat_thread.start()
+if authenticated:
+    # Start the heartbeat thread after successful authentication
+    heartbeat_running = True
+    heartbeat_thread = threading.Thread(target=send_heartbeat)
+    heartbeat_thread.start()
 
-        # Start upload server thread, in case peer want to file
-        upload_server_thread = Thread(target=start_file_upload, daemon=True)
-        upload_server_thread.start()
+    # Start upload server thread, in case peer want to file
+    upload_server_thread = Thread(target=start_file_upload, daemon=True)
+    upload_server_thread.start()
+    
+    while True:
 
         command = input("\nIntroduce the command:   ").lower()
         print(f"[send] {command}")
