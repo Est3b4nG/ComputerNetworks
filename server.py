@@ -54,8 +54,8 @@ class ClientThread(Thread):
                     # Send the new port to the client for further communication
                     port_message = f"NEWPORT {self.clientPort}"
                     complete_message = f"NEWPORT {self.clientPort} {response}"
-                    print("[send] " + response)
-                    print("[send] " + port_message)
+                    print(f"[send] {response} to {self.clientAddress}")
+                    print(f"[send] {port_message} to {self.clientAddress}")
                     serverSocket.sendto(complete_message.encode(), self.clientAddress)
 
                 else:
@@ -68,28 +68,28 @@ class ClientThread(Thread):
                     if self.clientAuthenticated == False:
                         # Handle message from the client                   
                         if "login" in message:
-                            print("[recv] New login request")
+                            print(f"[recv] New login request from {self.clientAddress}")
                             self.process_login(message, False)
                             continue
 
                         else:
-                            print(f"[recv] {message}")
-                            response_message = "Not Valid Option"
-                            print("[send] " + response_message)
+                            print(f"[recv] {message} from {self.clientAddress}")
+                            response_message = "Not Valid Option, you need to log in"
+                            print(f"[send] {response_message} to {self.clientAddress}")
                             self.clientSocket.sendto(response_message.encode(), self.clientAddress)
 
                     elif self.clientAuthenticated == True: 
 
-                        if clientAddress not in activeClients:
-                            activeClients.append(clientAddress)
+                        if clientUsernamesDict[self.clientAddress] not in activeClients:
+                            activeClients.append(clientUsernamesDict[self.clientAddress])
 
-                        client_last_active[self.clientAddress] = time.time()
+                        client_last_active[clientUsernamesDict[self.clientAddress]] = time.time()
                         
                         if message == 'heartbeat':
                             #print("heartbeat")
                             continue
 
-                        print("[recv] " + message)
+                        print(f"[recv] {message} from {clientUsernamesDict[self.clientAddress]}")
 
                         if message.startswith("pub"):
                             response = self.pubFile(message)
@@ -105,10 +105,14 @@ class ClientThread(Thread):
 
                         elif message == "lpf":
                             response = self.lpf()
+                        
+                        elif message.startswith("sch"):
+                            response = self.sch(message)
+
                         else:  
                             response= 'Cannot understand this message'
                         
-                        print(f"[send] {response}")
+                        print(f"[send] {response} to {clientUsernamesDict[self.clientAddress]}")
                         self.clientSocket.sendto(response.encode(), self.clientAddress)
 
                         
@@ -137,18 +141,20 @@ class ClientThread(Thread):
         elif client_username not in credentials:
             response = "Wrong username"
         elif credentials[client_username] != client_password:
-            response = "Wrong password"
+            response = "Username and password do not correspond"
         else:
             self.clientAuthenticated = True
-            clientUsernamesDict[clientAddress] = client_username
-           # print(clientUsernamesDict)
-            response = "Authentication successful"
+            clientUsernamesDict[self.clientAddress] = client_username
+            if clientUsernamesDict[self.clientAddress] not in activeClients:
+                activeClients.append(clientUsernamesDict[self.clientAddress])
+            #print(clientUsernamesDict)
+            response = "Authentication successful, you're active, welcome to BitTrickle"
 
         if first_iteration:
             return response
         
         else:    
-            print("[send] " + response)
+            print(f"[send] {response} to {self.clientAddress}")
             self.clientSocket.sendto(response.encode(), self.clientAddress)
 
     def pubFile(self, message):
@@ -163,7 +169,9 @@ class ClientThread(Thread):
     def getFile(self, message):
         filename = message.split(" ")[1]
         if filename in published_files and published_files[filename] in activeClients:
-            peer_address = published_files[filename]
+            for client_address, client_user in clientUsernamesDict.items():
+                if client_user == published_files[filename]:
+                    peer_address = client_address
             response = f"PEER {peer_address[0]} {peer_address[1]}"
         else:
             response = "No active peers with that file"
@@ -180,11 +188,11 @@ class ClientThread(Thread):
 
     def lap(self):
         active_usernames = []
-        for client in activeClients:
-            if client != self.clientAddress:
-                active_usernames.append(clientUsernamesDict[client])
+        for user in activeClients:
+            if user != clientUsernamesDict[self.clientAddress]:
+                active_usernames.append(user)
         if active_usernames:
-            response = "\t, ".join(active_usernames)
+            response = " , ".join(active_usernames)
         else:
             response = "There are not active peers"
         return response
@@ -199,6 +207,18 @@ class ClientThread(Thread):
         else:
             response = "User has not published any file"
         return response
+    
+    def sch(self, message):
+        filesubstring = message.split(" ")[1]
+        substring_list = []
+        for file in published_files:
+            if filesubstring in file and published_files[file] in activeClients and published_files[file]!=clientUsernamesDict[self.clientAddress]:
+                substring_list.append(file)
+        if substring_list:
+            response = " , ".join(substring_list)
+        else:
+            response = f"There are not files published by peers with {filesubstring} substring"
+        return response
 
 
 print("\n===== Server is running =====")
@@ -208,7 +228,6 @@ print("===== Waiting for connection request from clients...=====")
 # Periodically check if clients are still active
 def check_active_clients():
     while True:
-    #    print(activeClients)
         now = time.time()
         inactive_clients = []
 
@@ -218,10 +237,10 @@ def check_active_clients():
                 inactive_clients.append(client)
         
         for client in inactive_clients:
-            print(f"Client {client} is inactive, removing them.")
+            print(f"Client {client} is inactive, removing them from active user list.")
             del client_last_active[client]
 
-        print(activeClients)
+        #print(activeClients)
 
         #It is a good practice to add a pauce in order to avoid that the loop continuously consume CPU resources
         time.sleep(0.5)
