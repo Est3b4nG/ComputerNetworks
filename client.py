@@ -42,9 +42,9 @@ def download_file(peer_ip, peer_port, filename):
                     if not data:   #Waiting for the data
                         break
                     file.write(data)
-            print(f"Downloaded {filename} successfully")
+            print(f"\n[download info] Downloaded {filename} successfully\n")
     except Exception as e:
-        print(f"Failed to download {filename}: {e}")
+        print(f"\n[download info] Failed to download {filename}: {e}\n")
 
 #Function for the thread that will upload of the requested peer
 def start_file_upload():
@@ -56,12 +56,14 @@ def start_file_upload():
 #    print(f"File upload server started on port {upload_port}")
 
     # Inform the main server of the new upload port 
-    clientSocket.sendto(f"{username} upload port will be {upload_port}".encode(), serverAddress)
+    TCP_port_info = f"{username} upload port will be {upload_port}"
+    print(f"\n[send] {TCP_port_info}\n")
+    clientSocket.sendto(TCP_port_info.encode(), serverAddress)
 
     while True:
         # Accept incoming download requests
         peerSockt, peerAddress = uploadingSocket.accept()
-        print(f"Connected to downloading peer {peerAddress}")
+        print(f"\n[upload info] Connected to downloading peer {peerAddress}\n")
 
         # Start a new thread to handle the file upload
         Thread(target=send_file_data, args=(peerSockt,)).start()
@@ -77,11 +79,11 @@ def send_file_data(peerSockt):
 
             # Open the requested file and send its data
             with open(filename, "rb") as file:
-                while (chunk := file.read(1024)):   #In cas it is a big file, we need to send it by parts
+                while (chunk := file.read(1024)):   #In case it is a big file, we need to send it by parts
                     peerSockt.sendall(chunk)
-            print(f"File {filename} sent successfully.")
+            print(f"\n[upload info] File {filename} sent successfully.\n")
     except Exception as e:
-        print(f"Error sending file: {e}")
+        print(f"\n[upload info] Error sending file: {e}\n")
     finally:
         peerSockt.close()
 
