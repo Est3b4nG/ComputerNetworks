@@ -93,7 +93,7 @@ class ClientThread(Thread):
 
                         if "upload port" in message:
                             TCP_port_dictionaries[message.split(" ")[0]] = message.split(" ")[5]
-                            print(f"{message.split(" ")[0]} upload port {message.split(" ")[5]} added to the TCP port list")
+                            print(f"[info] {message.split(" ")[0]} upload port {message.split(" ")[5]} added to the TCP port list")
                             #print(TCP_port_dictionaries)  
                             continue    
 
@@ -125,6 +125,7 @@ class ClientThread(Thread):
             except Exception as e:
                 print("Error: ", e)
                 self.clientAlive = False
+
 
     def process_login(self, message, first_iteration):
         print("--- Processing Login ---")
