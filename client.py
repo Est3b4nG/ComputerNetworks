@@ -113,17 +113,8 @@ while True:
             # Combine the rest of the message after the port
             receivedMessage = " ".join(receivedMessage[2:])  # Start from the 2nd index to skip the port
 
-        # parse the message received from server and take corresponding actions
-        if receivedMessage == "":
-            print("[recv] Message from server is empty!")
-        elif receivedMessage == "Not Valid Option":
-            print("[recv] Not Valid Option, It is necessary to log in")
-        elif receivedMessage == "Wrong username":
-            print("[recv] Non existing username")
-        elif receivedMessage == "Wrong password":
-            print("[recv] Not corresponding username and password")
-        elif receivedMessage == "Authentication successful":
-            print("[recv] Correct username and password, you've been authenticated and you're actvive")
+        print(f"[recv] {receivedMessage}")
+        if receivedMessage == "Authentication successful, you're active, welcome to BitTrickle":
             authenticated = True
  
     if authenticated:
@@ -143,7 +134,11 @@ while True:
             # Terminate heartbeat, close sockets
             heartbeat_running = False
             clientSocket.close()
+            print("Goodbye")
             break
+
+        if command == None:
+                command = "<Empty>"
 
         clientSocket.sendto(f"{command}".encode(), serverAddress)
 
@@ -156,19 +151,3 @@ while True:
                 peer_port = int(peer_port)
                 download_thread = threading.Thread(target=download_file, args=(peer_ip, peer_port, command.split(" ")[1]))
                 download_thread.start()
-    
-
-
-    while True:
-        ans = input("\nDo you want to continue (y/n): ").lower()
-        if ans == "y":
-            break  # Continue with the process
-        elif ans == "n":
-            #Close the socket
-            clientSocket.sendto("quit".encode(), serverAddress)
-            clientSocket.close()
-            exit()
-        else:
-            print("Invalid input. Please enter 'y' or 'n'.")
-
-
