@@ -55,7 +55,7 @@ class ClientThread(Thread):
                     port_message = f"NEWPORT {self.clientPort}"
                     complete_message = f"NEWPORT {self.clientPort} {response}"
                     print(f"[send] {response} to {self.clientAddress}")
-                    print(f"[send] {port_message} to {self.clientAddress}")
+                    #print(f"[send] {port_message} to {self.clientAddress}")
                     serverSocket.sendto(complete_message.encode(), self.clientAddress)
 
                 else:
@@ -92,8 +92,8 @@ class ClientThread(Thread):
                         print(f"[recv] {message} from {clientUsernamesDict[self.clientAddress]}")
 
                         if "upload port" in message:
-                            TCP_port_dictionaries[message.split(" ")[0]] = message.split(" ")[5]
-                            print(f"[info] {message.split(" ")[0]} upload port {message.split(" ")[5]} added to the TCP port list")
+                            TCP_port_dictionaries[message.split(' ')[0]] = message.split(' ')[5]
+                            print(f"[info] {message.split(' ')[0]} upload port {message.split(' ')[5]} added to the TCP port list")
                             #print(TCP_port_dictionaries)  
                             continue    
 
@@ -133,8 +133,10 @@ class ClientThread(Thread):
         try:
             with open("credentials.txt", "r") as file:
                 for line in file:
-                    username, password = line.strip().split(" ")
-                    credentials[username] = password
+                    parts = line.strip().split(" ")
+                    if len(parts) == 2: 
+                        username, password = parts
+                        credentials[username] = password
         except FileNotFoundError:
             print("Error: credentials.txt was not found.")
             sys.exit(1)
@@ -246,7 +248,7 @@ def check_active_clients():
                 inactive_clients.append(client)
         
         for client in inactive_clients:
-            print(f"Client {client} is inactive, removing them from active user list.")
+            print(f"[info] Client {client} is inactive, removing them from active user list.")
             del client_last_active[client]
 
         #print(activeClients)
